@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Database, Plus, RefreshCw, Shirt, Sparkles, X } from "lucide-react";
-import { generateStyling, QUICK_TAGS } from "@/services/ai";
+import { CATALOG, generateStyling, QUICK_TAGS } from "@/services/ai";
 import { supabase } from "@/lib/supabase";
+import { categoryFromLabel, labelFromCategory } from "@/lib/category";
 import type { ClosetItem, StylingRecommendation } from "@/types";
-import { CATALOG } from "@/services/ai";
 import { Chip, PrimaryButton, ScreenHeader } from "@/components/ui";
 import { ClosetUploadFlow } from "@/components/ClosetUploadFlow";
 
@@ -24,7 +24,7 @@ function toClosetItem(item: ClothesItem): ClosetItem {
   return {
     id: item.id,
     imageDataUrl: item.imageUrl,
-    category: item.category === "아우터" ? "Outerwear" : item.category === "상의" ? "Top" : item.category === "하의" ? "Bottom" : "Shoes",
+    category: categoryFromLabel(item.category),
     sub_category: item.name,
     primary_color: "미정",
     style: ["데일리"],
@@ -34,7 +34,7 @@ function toClosetItem(item: ClothesItem): ClosetItem {
 }
 
 export default function StylingApp() {
-  const [activeTab, setActiveTab] = useState<Tab>("data");
+  const [activeTab, setActiveTab] = useState<Tab>("closet");
   const [clothesList, setClothesList] = useState<ClothesItem[]>(SAMPLE_CLOTHES);
   const [deleteTarget, setDeleteTarget] = useState<ClothesItem | null>(null);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
@@ -49,6 +49,12 @@ export default function StylingApp() {
 
   useEffect(() => {
     const loadClothes = async () => {
+      if (!supabase) {
+        // .env가 없으면 원격 조회를 건너뛰고 샘플 옷장으로 동작한다.
+        setErrorMessage("Supabase 설정이 없어 샘플 옷장을 보여드려요. 등록한 의류는 저장되지 않습니다.");
+        setIsLoading(false);
+        return;
+      }
       const { data, error } = await supabase.from("closet_items").select("id, category, name, image_url").order("created_at", { ascending: false });
       if (error) {
         setErrorMessage("옷장 데이터를 불러오지 못했습니다. 샘플 화면을 보여드려요.");
@@ -61,28 +67,42 @@ export default function StylingApp() {
   }, []);
 
   const handleSavedFromUpload = async (item: ClosetItem) => {
-    const categoryLabel = item.category === "Outerwear" ? "아우터" : item.category === "Top" ? "상의" : item.category === "Bottom" ? "하의" : item.category === "Shoes" ? "신발" : item.category === "Bag" ? "가방" : "액세서리";
-    const newItem: ClothesItem = { id: item.id, category: categoryLabel, name: item.sub_category, imageUrl: item.imageDataUrl };
+    const newItem: ClothesItem = { id: item.id, category: labelFromCategory(item.category), name: item.sub_category, imageUrl: item.imageDataUrl };
     setClothesList((current) => [newItem, ...current]);
     setShowUploadFlow(false);
+    if (!supabase) return;
     const { error } = await supabase.from("closet_items").insert({ id: newItem.id, category: newItem.category, name: newItem.name, image_url: newItem.imageUrl });
     if (error) setErrorMessage("사진은 화면에 추가했지만 저장하지 못했습니다.");
   };
 
   const deleteItem = async () => {
     if (!deleteTarget) return;
-    setClothesList((current) => current.filter((item) => item.id !== deleteTarget.id));
-    const { error } = await supabase.from("closet_items").delete().eq("id", deleteTarget.id);
-    if (error) setErrorMessage("화면에서는 삭제했지만 저장된 데이터는 삭제하지 못했습니다.");
+    const targetId = deleteTarget.id;
+    setClothesList((current) => current.filter((item) => item.id !== targetId));
     setDeleteTarget(null);
+    if (!supabase) return;
+    const { error } = await supabase.from("closet_items").delete().eq("id", targetId);
+    if (error) setErrorMessage("화면에서는 삭제했지만 저장된 데이터는 삭제하지 못했습니다.");
   };
 
   const deleteAll = async () => {
     setClothesList([]);
+    setShowDeleteAllModal(false);
+    if (!supabase) return;
+    // id는 text PK라 빈 문자열일 수 없으므로 "id가 비어 있지 않은 모든 행"을 지운다.
     const { error } = await supabase.from("closet_items").delete().neq("id", "");
     if (error) setErrorMessage("화면에서는 삭제했지만 저장된 데이터를 모두 삭제하지 못했습니다.");
-    setShowDeleteAllModal(false);
   };
+
+  const visibleClothes = useMemo(
+    () => clothesList.filter((item) =>
+      closetFilter === "전체" ||
+      (closetFilter === "기타"
+        ? !["상의", "하의", "아우터"].includes(item.category)
+        : item.category === closetFilter),
+    ),
+    [clothesList, closetFilter],
+  );
 
   const createRecommendation = async () => {
     if (!prompt.trim() || clothesList.length === 0) return;
@@ -130,11 +150,11 @@ export default function StylingApp() {
 
             {clothesList.length === 0 ? (
               <div className="space-y-2 py-20 text-center text-neutral-400"><Shirt size={40} className="mx-auto stroke-[1.2]" /><p className="text-sm">등록된 의류가 없습니다.</p><p className="text-xs">오른쪽 상단 + 버튼으로 사진을 등록해 보세요.</p></div>
-            ) : clothesList.filter((item) => closetFilter === "전체" || (closetFilter === "기타" ? !["상의", "하의", "아우터"].includes(item.category) : item.category === closetFilter)).length === 0 ? (
+            ) : visibleClothes.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-neutral-200 py-16 text-center text-neutral-400"><Shirt size={34} className="mx-auto mb-3 stroke-[1.2]" /><p className="text-sm">이 카테고리에 등록된 의류가 없습니다.</p></div>
             ) : (
               <div className="space-y-4">
-                {clothesList.filter((item) => closetFilter === "전체" || (closetFilter === "기타" ? !["상의", "하의", "아우터"].includes(item.category) : item.category === closetFilter)).map((item) => <ClosetCard key={item.id} item={item} />)}
+                {visibleClothes.map((item) => <ClosetCard key={item.id} item={item} />)}
               </div>
             )}
           </div>

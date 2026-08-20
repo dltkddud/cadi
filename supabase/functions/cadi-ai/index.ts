@@ -61,7 +61,11 @@ async function callOpenAI(apiKey: string, body: object) {
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
   if (!content) throw new Error("OpenAI 응답에 content가 없습니다.");
-  return JSON.parse(content);
+  try {
+    return JSON.parse(content);
+  } catch {
+    throw new Error("OpenAI 응답을 JSON으로 파싱하지 못했습니다.");
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -81,7 +85,13 @@ Deno.serve(async (req: Request) => {
     const { action, payload } = await req.json();
 
     if (action === "analyze-closet") {
-      const { imageDataUrl } = payload;
+      const { imageDataUrl } = payload ?? {};
+      if (typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:image/")) {
+        return new Response(JSON.stringify({ error: "분석할 이미지가 없습니다." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const result = await callOpenAI(apiKey, {
         model: "gpt-4o",
         messages: [
@@ -118,7 +128,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "generate-styling") {
-      const { closet, prompt, catalog } = payload as { closet: ClosetItem[]; prompt: string; catalog: McmBag[] };
+      const { closet, prompt, catalog } = (payload ?? {}) as { closet?: ClosetItem[]; prompt?: string; catalog?: McmBag[] };
+
+      // enum이 빈 배열이면 strict json_schema 요청 자체가 거부되므로 먼저 막는다.
+      if (!Array.isArray(closet) || closet.length === 0 || !Array.isArray(catalog) || catalog.length === 0 || !prompt?.trim()) {
+        return new Response(JSON.stringify({ error: "옷장, 카탈로그, 상황 설명이 모두 필요합니다." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const closetItemIds = closet.map((i) => i.id);
       const bagIds = catalog.map((b) => b.id);
 
@@ -160,7 +179,10 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    // 원인은 함수 로그에만 남긴다. OpenAI 오류 본문에는 요청 내용이나 키 관련
+    // 정보가 섞여 나올 수 있어 클라이언트로 그대로 흘려보내지 않는다.
+    console.error("[cadi-ai] 처리 실패:", err instanceof Error ? err.stack ?? err.message : err);
+    return new Response(JSON.stringify({ error: "요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

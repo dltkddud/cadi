@@ -1,7 +1,9 @@
 export function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-pressed={selected}
       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
         selected ? "bg-black text-white border-black" : "bg-white text-black border-neutral-200"
       }`}
@@ -16,12 +18,16 @@ export function PrimaryButton({
 }: {
   label: string; onClick: () => void; disabled?: boolean; loading?: boolean;
 }) {
+  // loading 중에는 호출자가 disabled를 따로 넘기지 않아도 눌리지 않도록 한다.
+  const isDisabled = Boolean(disabled) || Boolean(loading);
   return (
     <button
+      type="button"
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
+      aria-busy={Boolean(loading)}
       className={`w-full rounded-md py-3.5 text-base font-semibold text-white bg-black transition-opacity ${
-        disabled ? "opacity-40" : "opacity-100 active:opacity-80"
+        isDisabled ? "opacity-40" : "opacity-100 active:opacity-80"
       }`}
     >
       {loading ? "생성 중..." : label}

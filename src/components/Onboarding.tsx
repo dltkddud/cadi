@@ -1,7 +1,45 @@
 import { useState } from "react";
 import { ChevronLeft, CheckSquare, Square } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 type Screen = "landing" | "login" | "signup" | "consent";
+
+// Header/ConsentItem은 Onboarding 밖에 둔다. 컴포넌트 본문 안에서 정의하면
+// 렌더마다 새 컴포넌트 타입이 만들어져 React가 하위 트리를 매번 언마운트한다.
+function Header({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <div className="relative flex items-center justify-center py-2 border-b border-neutral-100 mb-6">
+      <button type="button" onClick={onBack} aria-label="뒤로 가기" className="absolute left-0 text-neutral-700">
+        <ChevronLeft size={24} />
+      </button>
+      <span className="font-bold text-base">{label}</span>
+    </div>
+  );
+}
+
+function ConsentItem({
+  title, desc, agreed, onToggle,
+}: {
+  title: string; desc: string; agreed: boolean; onToggle: () => void;
+}) {
+  return (
+    <div className="p-4 border border-neutral-200 rounded-xl space-y-3">
+      <div>
+        <h4 className="text-xs font-bold text-neutral-700 mb-1">{title}</h4>
+        <p className="text-[11px] text-neutral-400 leading-normal">{desc}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={agreed}
+        className="flex items-center gap-2 text-xs font-medium text-neutral-700"
+      >
+        {agreed ? <CheckSquare size={18} className="fill-neutral-800 text-white" /> : <Square size={18} className="text-neutral-300" />}
+        위 항목에 동의합니다
+      </button>
+    </div>
+  );
+}
 
 export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [screen, setScreen] = useState<Screen>("landing");
@@ -10,32 +48,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
   const [agree1, setAgree1] = useState(true);
   const [agree2, setAgree2] = useState(true);
   const [agree3, setAgree3] = useState(false);
-
-  const Header = ({ label, onBack }: { label: string; onBack: () => void }) => (
-    <div className="relative flex items-center justify-center py-2 border-b border-neutral-100 mb-6">
-      <button onClick={onBack} className="absolute left-0 text-neutral-700">
-        <ChevronLeft size={24} />
-      </button>
-      <span className="font-bold text-base">{label}</span>
-    </div>
-  );
-
-  const ConsentItem = ({
-    title, desc, agreed, onToggle,
-  }: {
-    title: string; desc: string; agreed: boolean; onToggle: () => void;
-  }) => (
-    <div className="p-4 border border-neutral-200 rounded-xl space-y-3">
-      <div>
-        <h4 className="text-xs font-bold text-neutral-700 mb-1">{title}</h4>
-        <p className="text-[11px] text-neutral-400 leading-normal">{desc}</p>
-      </div>
-      <button onClick={onToggle} className="flex items-center gap-2 text-xs font-medium text-neutral-700">
-        {agreed ? <CheckSquare size={18} className="fill-neutral-800 text-white" /> : <Square size={18} className="text-neutral-300" />}
-        위 항목에 동의합니다
-      </button>
-    </div>
-  );
 
   return (
     <div className="flex flex-col h-full">
@@ -48,7 +60,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
 
           <div className="my-auto space-y-6">
             <div className="w-full h-64 rounded-2xl overflow-hidden bg-neutral-100 flex items-center justify-center">
-              <img src={`${import.meta.env.BASE_URL}cadi-logo.png`} alt="Cadi 대표 이미지" className="h-full w-full object-cover" />
+              <Logo alt="Cadi 대표 이미지" className="h-full w-full object-cover" />
             </div>
 
             <div>

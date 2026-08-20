@@ -1,3 +1,5 @@
+import { Logo } from "@/components/Logo";
+
 export function LandingOpening({ onEnter }: { onEnter: () => void }) {
   return (
     <div className="relative flex h-full flex-col items-center justify-between overflow-hidden bg-neutral-900 text-white">
@@ -12,7 +14,7 @@ export function LandingOpening({ onEnter }: { onEnter: () => void }) {
 
       <div className="relative z-10 flex flex-col items-center px-8 text-center">
         <div className="mb-8 h-44 w-44 overflow-hidden rounded-3xl bg-white shadow-2xl">
-          <img src={`${import.meta.env.BASE_URL}cadi-logo.png`} alt="Cadi" className="h-full w-full object-cover" />
+          <Logo className="h-full w-full object-cover" />
         </div>
         <h1 className="text-3xl font-bold leading-tight tracking-tight">
           나의 옷장에서<br />시작하는 스타일링
