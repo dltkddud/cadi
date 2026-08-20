@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ChevronLeft, CheckSquare, Square } from "lucide-react";
-import { Logo } from "@/components/Logo";
 
 type Screen = "landing" | "login" | "signup" | "consent";
 
@@ -43,14 +42,13 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       {/* ================= 1. 랜딩 / 서비스 소개 화면 ================= */}
       {screen === "landing" && (
         <div className="flex flex-col justify-between h-full p-6">
-          <div className="flex items-center justify-center py-3 border-b border-neutral-100">
-            <Logo className="h-9" />
+          <div className="text-center font-bold text-base py-2 border-b border-neutral-100">
+            랜딩/서비스 소개 화면
           </div>
 
           <div className="my-auto space-y-6">
-            <div className="w-full h-64 bg-neutral-50 border border-neutral-200 rounded-2xl flex flex-col items-center justify-center gap-3">
-              <Logo className="h-28" />
-              <span className="text-sm text-neutral-400">나의 옷장에서 시작하는 스타일링</span>
+            <div className="w-full h-64 rounded-2xl overflow-hidden bg-neutral-100 flex items-center justify-center">
+              <img src={`${import.meta.env.BASE_URL}cadi-logo.png`} alt="Cadi 대표 이미지" className="h-full w-full object-cover" />
             </div>
 
             <div>
@@ -98,10 +96,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       {screen === "login" && (
         <div className="flex flex-col h-full p-6">
           <Header label="로그인 화면" onBack={() => setScreen("landing")} />
-
-          <div className="flex justify-center mb-6">
-            <Logo className="h-14" />
-          </div>
 
           <div className="space-y-6">
             <div>
@@ -151,10 +145,6 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
       {screen === "signup" && (
         <div className="flex flex-col h-full p-6">
           <Header label="회원가입 화면" onBack={() => setScreen("landing")} />
-
-          <div className="flex justify-center mb-6">
-            <Logo className="h-14" />
-          </div>
 
           <div className="space-y-6">
             <div>

@@ -6,7 +6,6 @@ import type { ClosetItem, StylingRecommendation } from "@/types";
 import { CATALOG } from "@/services/ai";
 import { Chip, PrimaryButton, ScreenHeader } from "@/components/ui";
 import { ClosetUploadFlow } from "@/components/ClosetUploadFlow";
-import { Logo } from "@/components/Logo";
 
 type Tab = "closet" | "styling" | "data";
 type ClosetFilter = "전체" | "상의" | "하의" | "아우터" | "기타";
@@ -107,9 +106,6 @@ export default function StylingApp() {
 
   return (
     <div className="flex flex-col h-full bg-white relative">
-      <header className="flex items-center justify-center border-b border-neutral-100 py-3">
-        <Logo className="h-7" />
-      </header>
       <div className="flex-1 overflow-y-auto p-5 pb-24">
         {errorMessage && <div className="mb-4 rounded-xl bg-neutral-100 px-3 py-2 text-xs text-neutral-600">{errorMessage}</div>}
         {isLoading && <div className="py-16 text-center text-xs text-neutral-400">옷장을 불러오는 중입니다.</div>}

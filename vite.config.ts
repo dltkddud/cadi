@@ -4,8 +4,8 @@ import { fileURLToPath, URL } from 'node:url';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
-  // GitHub Pages는 https://<user>.github.io/cadi/ 하위 경로로 서비스되므로
-  // 프로덕션 빌드에서만 base를 지정한다. (dev 서버는 루트 유지)
+  // GitHub Pages는 https://dltkddud.github.io/cadi/ 하위 경로로 서빙되므로
+  // 프로덕션 빌드에서만 base를 '/cadi/'로 지정하고, dev 서버는 '/'를 유지한다.
   base: command === 'build' ? '/cadi/' : '/',
   plugins: [react()],
   resolve: {
